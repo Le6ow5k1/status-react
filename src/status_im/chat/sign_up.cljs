@@ -164,7 +164,8 @@
      :content-type const/content-type-command-request
      :outgoing     false
      :from         const/console-chat-id
-     :to           "me"}]])
+     :to           "me"}]
+   [:update-suggestions]])
 
 (def console-chat
   {:chat-id      const/console-chat-id

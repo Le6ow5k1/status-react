@@ -1,4 +1,4 @@
- (ns ^:figwheel-no-load env.ios.main
+(ns ^:figwheel-no-load env.ios.main
   (:require [reagent.core :as r]
             [re-frisk-remote.core :as rr]
             [status-im.ios.core :as core]
