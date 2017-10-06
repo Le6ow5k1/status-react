@@ -1,5 +1,6 @@
 (ns status-im.ui.screens.wallet.choose-recipient.events
   (:require [status-im.i18n :as i18n]
+            [status-im.utils.eip.eip67 :as eip67]
             [status-im.utils.handlers :as handlers]))
 
 (handlers/register-handler-db
@@ -14,8 +15,9 @@
 
 (handlers/register-handler-fx
   :choose-recipient
-  (fn [{{:keys [web3] :as db} :db} [_ address name]]
+  (fn [{{:keys [web3] :as db} :db} [_ data name]]
     (let [{:keys [view-id]} db
+          address (:address (eip67/parse-uri data))
           valid-address? (.isAddress web3 address)]
       (cond-> {:db db}
               (= :choose-recipient view-id) (assoc :dispatch [:navigate-back])
