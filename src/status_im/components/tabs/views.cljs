@@ -1,42 +1,44 @@
 (ns status-im.components.tabs.views
-  (:require [re-frame.core :refer [dispatch]]
-            [status-im.components.icons.vector-icons :as vi]
+  (:require [re-frame.core :as re-frame]
             [status-im.components.react :as react]
-            [status-im.components.tabs.styles :as tabs.styles]
             [status-im.utils.platform :as platform])
   (:require-macros [status-im.utils.views :refer [defview]]))
 
-(defn- tab [{:keys [view-id title icon-active icon-inactive style-active selected-view-id on-press]}]
-  (let [active? (= view-id selected-view-id)
-        text-only? (nil? icon-active)]
-    [react/touchable-highlight {:style    (merge tabs.styles/tab (if (and active? style-active) style-active))
-                                :disabled active?
-                                :on-press  #(if on-press (on-press view-id) (dispatch [:navigate-to-tab view-id]))}
-     [react/view {:style tabs.styles/tab-container}
-      (when-let [icon (if active? icon-active icon-inactive)]
-        [react/view
-         [vi/icon icon (tabs.styles/tab-icon active?)]])
-      [react/view
-       [react/text (merge (if text-only? {:uppercase? (get-in platform/platform-specific [:uppercase?])})
-                          {:style (tabs.styles/tab-title active? text-only?)})
-        title]]]]))
+(defview tab [index content tab-style on-press active?]
+  [react/view (when tab-style
+                (tab-style active?))
+   [react/touchable-highlight {:disabled active?
+                               :on-press #(on-press index)}
+    [react/view
+     [content active?]]]])
 
-(defn- create-tab [index data selected-view-id on-press style-active]
-  (let [data (merge data {:key              index
-                          :index            index
-                          :style-active     style-active
-                          :selected-view-id selected-view-id
-                          :on-press         on-press})]
-    [tab data]))
+(defn tabs [tabs-container-style indexed-tabs current-tab tab-style on-press]
+  [react/view tabs-container-style
+   (for [[index {:keys [content view-id]}] indexed-tabs]
+     ^{:key index} [tab index content tab-style on-press (= view-id current-tab)])])
 
-(defview tabs-container [style children]
-  (letsubs [tabs-hidden? [:tabs-hidden?]]
-    [react/animated-view {:style          style
-                          :pointer-events (if tabs-hidden? :none :auto)}
-     children]))
-
-(defn tabs [{:keys [style style-tab-active tab-list selected-view-id on-press]}]
-  [tabs-container style
-   (into
-    [react/view tabs.styles/tabs-inner-container]
-    (map-indexed #(create-tab %1 %2 selected-view-id on-press style-tab-active) tab-list))])
+(defn swipable-tabs [current-tab {:keys [tabs-list bottom-tabs? main-container-style tabs-container-style tab-style]}]
+  (let [swiper        (atom nil)
+        indexed-tabs  (map-indexed vector tabs-list)
+        tab->index    (reduce (fn [acc [index tab]]
+                                (assoc acc (:view-id tab) index))
+                              {}
+                              indexed-tabs)
+        index->tab    (clojure.set/map-invert tab->index)
+        get-tab-index #(get tab->index % 0)]
+    (fn [current-tab]
+      (let [current-tab-index (get-tab-index current-tab)
+            on-press          (fn [index]
+                                (.scrollBy @swiper (- index current-tab-index)))]
+        [react/view main-container-style
+         (when-not bottom-tabs?
+           [tabs tabs-container-style indexed-tabs current-tab tab-style on-press])
+         [react/swiper {:loop             false
+                        :shows-pagination false
+                        :index            current-tab-index
+                        :ref              #(reset! swiper %)
+                        :on-index-changed #(re-frame/dispatch [:change-tab (index->tab %)])}
+          (for [[index {:keys [screen view-id]}] indexed-tabs]
+            ^{:key index} [screen (= (get-tab-index view-id) current-tab-index)])]
+         (when bottom-tabs?
+           [tabs tabs-container-style indexed-tabs current-tab tab-style on-press])]))))

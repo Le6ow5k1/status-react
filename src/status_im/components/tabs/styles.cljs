@@ -8,13 +8,22 @@
 (def tab-height (dec tabs-height))
 
 (defn tabs-container [hidden?]
-  {:position         :absolute
-   :bottom           (if hidden? (- tabs-height) 0)
-   :left             0
-   :right            0
+  {:flex-direction :row
+
    :height           tabs-height
    :background-color styles/color-white
    :transform        [{:translateY 1}]})
+
+(defnstyle tab [active?]
+  {:flex                1
+   :height              tab-height
+   :justify-content     :center
+   :align-items         :center
+   :border-bottom-width (if active? 2 1)
+   :border-bottom-color (if active?
+                          styles/color-blue4
+                          styles/color-gray10-transparent)})
+
 
 (def tabs-container-line
   {:border-top-width 1
@@ -27,22 +36,14 @@
    :justifyContent  :center
    :alignItems      :center})
 
-(def tab
-  {:flex                1
-   :height              tab-height
-   :justify-content     :center
-   :align-items         :center
-   :border-bottom-width 2
-   :border-bottom-color styles/color-white})
 
-(defnstyle tab-title [active? text-only?]
-  {:ios        {:font-size (if text-only? 15 11)}
-   :android    {:font-size (if text-only? 14 12)}
+(defnstyle tab-title [active?]
+  {:ios        {:font-size 11}
+   :android    {:font-size 12}
    :text-align :center
-   :color      (cond
-                 active? styles/color-blue4
-                 text-only? styles/color-black
-                 :else styles/color-gray4)})
+   :color      (if active?
+                 styles/color-blue4
+                 styles/color-gray4)})
 
 (defn tab-icon [active?]
   {:color (if active? styles/color-blue4 styles/color-gray4)})
@@ -59,8 +60,9 @@
 (defn main-swiper [tabs-hidden?]
   (merge
    swiper
-   {:position :absolute
-    :top      0
-    :left     0
-    :right    0
-    :bottom   (if tabs-hidden? 0 tabs-height)}))
+   {}))
+
+(def main-container
+  {:flex             1
+   :background-color styles/color-white
+   })
